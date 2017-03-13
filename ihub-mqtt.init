@@ -1,0 +1,78 @@
+#!/bin/bash --
+#
+# $PROG - Init script for InsteonHub to MQTT gateway
+#
+### BEGIN INIT INFO
+# Provides: pytivo
+# Required-Start:       $all
+# Required-Stop:        $all
+# Should-Start:         $all
+# Should-Stop:          $all
+# Default-Start:        2 3 4 5
+# Default-Stop:         0 1 6
+# Short-description: InsteonHub to MQTT gateway
+# Description: Start and stop the InsteonHub to MQTT gateway
+### END INIT INFO
+#
+
+RETVAL=0
+SBINDIR=/usr/local/sbin
+PROG=ihub-mqtt
+CONFIG=/etc/insteonhub.yaml
+APPUSER=ihub
+
+start() {
+	[ -s $CONFIG ] || exit 1
+	echo -n "Starting $PROG "
+	pgrep -u $APPUSER -f $PROG
+	RETVAL=$?
+	[ $RETVAL -eq 0 ] && echo "... already running: Exiting" && exit 1
+
+	# Http proxies mess with us
+	unset $(env | grep -i proxy | cut -d= -f1)
+
+	# this call actually starts $PROG
+	su - $APPUSER -c '(
+while true ; do
+	'"$SBINDIR/$PROG -c $CONFIG"'
+	RETVAL=$? 
+	[ $RETVAL -ne 10 ] && exit $RETVAL
+done
+) < /dev/null &'
+	[ $RETVAL -eq 0 ] && echo -n "done"
+	echo
+	return $RETVAL
+}
+
+stop() {
+	echo -n "Stopping $PROG: "
+	pkill -u $APPUSER -f $PROG
+	RETVAL=$?
+	echo
+	[ $RETVAL -eq 0 ] && echo -n "done"
+	echo
+	return $RETVAL
+}
+
+# See how we were called.
+case "$1" in
+start)
+start
+	;;
+stop)
+stop
+	;;
+reload )
+	pkill -u $APPUSER -USR1 $PROG
+	;;
+restart)
+	stop
+	sleep 1
+	start
+	RETVAL=$?
+	;;
+*)
+echo "Usage: $0 {start|stop|restart}"
+exit 1
+esac
+exit $RETVAL

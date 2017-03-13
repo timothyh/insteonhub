@@ -1,0 +1,13 @@
+[Unit]
+Description=Start Insteon Hub to MQTT service
+Requires=network.service
+
+[Service]
+Environment=AE_LOG=filter=info
+ExecStart=%SBINDIR%/ihub-mqtt
+ExecReload=/bin/kill $MAINPID
+Type=simple
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

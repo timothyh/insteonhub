@@ -1,0 +1,34 @@
+To Do - In no particular order:
+- Help and usage messages
+- Refactor message callback handling
+- Customizable timestamps format + local/utc/epoch
+- Support for incoming JSON messages
+- Systemd service file
+- Installation script
+- Capture file replay
+- QOS on outgoing messages
+- Fixed MQTT client id/QOS on incoming
+- Option to disable exit when config changes
+- README
+- Documentation
+- Github check-in
+
+Done:
+- Linked group status updates
+- Init startup script
+- Automated exit/restart - exit_after
+- Capture file rotation
+- Standalone command line interface
+- Command line processing
+- Incoming group commands
+- Linked groups support
+- Process incoming commands
+- Only clear buffer when danger of rotation
+- Use device names in group definitions
+- Support for multi-button remote/switch
+- Add timestamps to capture files
+- Restart on config file change
+- Dummy credentials in test/sample files
+- Environment processing
+- exit on hub authentication failure
+- Exit immediately from commands that send Insteon commands when in passive mode
