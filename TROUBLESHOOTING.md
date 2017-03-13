@@ -17,15 +17,14 @@ Use Insteon app to:-
 
 ### Device(s) power up/down when ihub-mqtt (re)starts
 
-Most likely there's a retained message in the MQTT broker instructing this to happen. Retained messages can be removed usin
-g mosquitto_pub along the lines of:
-  $ mosquitto_pub -t home/insteon/mydevice/set -n -r
+Most likely there's a retained message in the MQTT broker instructing this to happen. Retained messages can be removed using mosquitto_pub along the lines of:
+  ```$ mosquitto_pub -t home/insteon/mydevice/set -n -r```
 
 ### Messages in log "warn  InsteonHub::Hub: Short message:..."
 
-These can be ignored - Just means hub was polled a an inconvenient time.
+These can be ignored - Just means hub was polled at an inconvenient time.
 
-### essages in log "info  InsteonHub::Hub: Skipping ...."
+### Messages in log "info  InsteonHub::Hub: Skipping ...."
 
 Unfamiliar Insteon messages where received from hub. Most likely cause is that the hub got busy and we missed some
 characters. It's also possible that this was caused by an unfamiliar Insteon device.
