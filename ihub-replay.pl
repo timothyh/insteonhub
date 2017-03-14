@@ -33,6 +33,24 @@ sub obj_cb {
             print "$timestamp:";
             $obj->{timestamp} = parse_date($timestamp);
         }
+        if ( defined $obj->{all_link_group} ) {
+            my $linkid = hex( $obj->{all_link_group} );
+            if ( defined $linked_groups[$linkid]{name} ) {
+                $obj->{group_name} = $linked_groups[$linkid]{name};
+            }
+        }
+        if (   defined( $obj->{from_address} )
+            && defined( $devices{ $obj->{from_address} }{name} ) )
+        {
+            $obj->{from_name} = $devices{ $obj->{from_address} }{name};
+            $obj->{from_type} = $devices{ $obj->{from_address} }{type};
+        }
+        if (   defined( $obj->{to_address} )
+            && defined( $devices{ $obj->{to_address} }{name} ) )
+        {
+            $obj->{to_name} = $devices{ $obj->{to_address} }{name};
+            $obj->{to_type} = $devices{ $obj->{to_address} }{type};
+        }
         print Dumper $obj;
     }
     else {
