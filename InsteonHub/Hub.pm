@@ -1,8 +1,9 @@
-use strict;
-
 package InsteonHub::Hub;
 
+use strict;
+
 use Data::Dumper;
+$Data::Dumper::Sortkeys = 1;
 use MIME::Base64;
 use POSIX qw(strftime);
 
@@ -87,7 +88,7 @@ my $sizeprev = 0;
 my $rawbuff = '';
 
 # Message sequence - Increments from startup
-my $msgseq = 0;
+my $msgseq = 1;
 
 # Last message processed
 my $rawmsgprev = '';
@@ -449,31 +450,43 @@ sub _process_hub_buffer {
     _write_hub_buffer($raw);
     $capturelog_skip = 0;
 
-    # Last two chars of buffer define length of usable string
-    my $size = hex( substr $raw, -2 );
+    my $size = length $raw;
 
-    if ( $size == 0 ) {
-        AE::log trace => "Ignoring zero length buffer";
-        $rawprev  = '';
-        $sizeprev = 0;
-        return -2;
-    }
+    # Is this a hub buffer or Insteon message
+    # Extended messages are 24 bytes
+    if ( $size <= 30 ) {
 
-    my $tmpprev = substr( $rawprev, 0, $sizeprev );
-    $rawprev = $raw;
-
-    $raw = substr( $raw, 0, $size );
-
-    if (    ( $size >= $sizeprev )
-        and ( substr( $raw, 0, $sizeprev ) eq $tmpprev ) )
-    {
-
-        # The received string is just the previous one with appended characters
-        $rawbuff = $rawbuff . substr( $raw, $sizeprev );
+        # Single Insteon message
+        $rawbuff = $raw;
     }
     else {
-        # Hub buffer has wrapped
-        $rawbuff = $rawbuff . $raw;
+        # Hub buffer
+        # Last two chars of buffer define length of usable string
+        $size = hex( substr $raw, -2 );
+
+        if ( $size == 0 ) {
+            AE::log trace => "Ignoring zero length buffer";
+            $rawprev  = '';
+            $sizeprev = 0;
+            return -2;
+        }
+
+        my $tmpprev = substr( $rawprev, 0, $sizeprev );
+        $rawprev = $raw;
+
+        $raw = substr( $raw, 0, $size );
+
+        if (    ( $size >= $sizeprev )
+            and ( substr( $raw, 0, $sizeprev ) eq $tmpprev ) )
+        {
+
+         # The received string is just the previous one with appended characters
+            $rawbuff = $rawbuff . substr( $raw, $sizeprev );
+        }
+        else {
+            # Hub buffer has wrapped
+            $rawbuff = $rawbuff . $raw;
+        }
     }
 
     $sizeprev = $size;
@@ -489,10 +502,7 @@ sub _process_hub_buffer {
             $rawbuff = substr( $rawbuff, 2 );
             next;
         }
-        if ( $skipped eq '06' ) {
-            AE::log trace => "Skipping $skipped";
-        }
-        elsif ( length $skipped ) {
+        if ( length $skipped ) {
             AE::log info => "Skipping $skipped";
         }
 
@@ -506,49 +516,42 @@ sub _process_hub_buffer {
         }
 
         # Ignore messages known not to be handled by MessageDecoder
+        my $cmdlen;
+        my $ignore;
         if ( $ignore_cmd{$cmd} ) {
-            my $cmdlen = $ignore_cmd{$cmd};
-            my $rawmsg = substr( $rawbuff, 0, $cmdlen );
-
-            $msgcnt++;
-            $rawbuff = substr( $rawbuff, $cmdlen );
-
-            next if ( $conf{'ignore_dups'} and ( $rawmsg eq $rawmsgprev ) );
-            $rawmsgprev = $rawmsg;
-
-            $msgseq++;
-
-            if ( $conf{callback_raw} ) {
-                $conf{callback_raw}->($rawmsg);
+            $cmdlen = $ignore_cmd{$cmd};
+            $ignore = 1;
+        }
+        else {
+            $cmdlen =
+              eval { Insteon::MessageDecoder::insteon_cmd_len( $cmd, 0, 0 ); };
+            AE::log debug => join( '\n', $@ ) if $@;
+            unless ( defined $cmdlen ) {
+                AE::log info => "Unknown Insteon command: $cmd";
+                $rawbuff = substr( $rawbuff, 2 );
+                next;
             }
-            if ( $conf{callback} ) {
-                my %m = (
-                    timestamp   => AnyEvent->now,
-                    sequence    => $msgseq,
-                    raw_message => $rawmsg,
-                );
-                $conf{callback}->( \%m );
-            }
-            next;
+
+            # Change bytes to nibbles
+            $cmdlen *= 2;
         }
 
-        my $cmdlen =
-          eval { Insteon::MessageDecoder::insteon_cmd_len( $cmd, 0, 0 ); };
-        AE::log debug => join( '\n', $@ ) if $@;
-        unless ( defined $cmdlen ) {
-            AE::log info => "Unknown Insteon command: $cmd";
-            $rawbuff = substr( $rawbuff, 2 );
-            next;
+        $msgcnt++;
+
+        if ( length($rawbuff) < $cmdlen ) {
+            AE::log warn => "Short message: $rawbuff";
+
+            # It's possible a circuit-breaker is needed here
+            # to stop an infinite loop.
+            # leave for next iteration
+            last;
         }
 
-        # Change bytes to nibbles
-        $cmdlen *= 2;
+        # Is there an ACK(06) or NAK(15)
+        $cmdlen += 2 if ( substr( $rawbuff, $cmdlen, 2 ) =~ m{^(06|15)} );
 
         my $rawmsg = substr( $rawbuff, 0, $cmdlen );
         AE::log trace => "Processing $rawmsg";
-
-        # Include partial messages
-        $msgcnt++;
 
         if ( $conf{'ignore_dups'} and ( $rawmsg eq $rawmsgprev ) ) {
             $rawbuff = substr( $rawbuff, $cmdlen );
@@ -556,24 +559,22 @@ sub _process_hub_buffer {
         }
         $rawmsgprev = $rawmsg;
 
-        my $res = eval { Insteon::MessageDecoder::plm_decode($rawmsg); };
-        AE::log debug => join( '\n', $@ ) if $@;
-
-        if ( $res =~ /message length too short for plm command/i ) {
-            AE::log warn => "Short message: $rawmsg";
-
-            # leave for next iteration
-            last;
-        }
-
-        $msgseq++;
-
-        $rawbuff = substr( $rawbuff, $cmdlen );
-
         if ( $conf{callback_raw} ) {
             $conf{callback_raw}->($rawmsg);
         }
-        if ( $conf{callback} ) {
+        if ( !$ignore && $conf{callback} ) {
+            my $res = eval { Insteon::MessageDecoder::plm_decode($rawmsg); };
+            AE::log debug => join( '\n', $@ ) if $@;
+
+            if ( $res =~ /message length too short for plm command/i ) {
+
+                # Should never happen
+                AE::log alert => "Short message: $rawmsg";
+
+                # leave for next iteration
+                last;
+            }
+
             my %m = (
                 timestamp   => AnyEvent->now,
                 raw_message => $rawmsg,
@@ -596,6 +597,9 @@ sub _process_hub_buffer {
 
             $conf{callback}->( \%m );
         }
+        $msgseq++;
+
+        $rawbuff = substr( $rawbuff, $cmdlen );
     }
 
     return $msgcnt;
