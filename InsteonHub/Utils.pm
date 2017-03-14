@@ -135,13 +135,16 @@ sub is_level {
     return ( $val >= 0.0 && $val <= 1.0 ) ? 1 : 0;
 }
 
+# Return previous midnight localtime in secs since epoch
 sub midnight {
-    my @time = localtime();
+    my $time = time;
+    my @time = localtime($time);
     my $secs = ( $time[2] * 3600 ) + ( $time[1] * 60 ) + $time[0];
 
-    return time - $secs;
+    return $time - $secs;
 }
 
+# Return secs to next midnight
 sub secs_to_midnight {
     my @time = localtime();
     my $secs = ( $time[2] * 3600 ) + ( $time[1] * 60 ) + $time[0];
@@ -149,28 +152,32 @@ sub secs_to_midnight {
     return ( 24 * 3600 ) - $secs + 1;
 }
 
+# Parse a random date string
+# Any string acceptable to date command can be used
 sub parse_date {
     my ($str) = @_;
 
-    my $secsstr = `date --date '$str' '+%s' 2> /dev/null`;
+    my $secsstr = `date --date '$str' '+%s.%N' 2> /dev/null`;
     chomp $secsstr;
 
-    return length($secsstr) ? $secsstr : -1;
+    return length($secsstr) ? ( 0.0 + $secsstr ) : -1;
 }
 
+# Return secs to next instance of random time
+# Date portion of any string is ignored
 sub secs_from_now {
     my $secsstr = parse_date(@_);
 
     return -1 unless ( $secsstr > 0 );
 
     # my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) =
-    my @tgt     = localtime($secsstr);
+    my @tgt     = localtime( int( $secsstr + 0.5 ) );
     my @now     = localtime(time);
     my $nowsecs = $now[0] + ( $now[1] * 60 ) + ( $now[2] * 3600 );
     my $tgtsecs = $tgt[0] + ( $tgt[1] * 60 ) + ( $tgt[2] * 3600 );
 
     my $secs = $tgtsecs - $nowsecs;
-    $secs += ( 24 * 3600 ) if ( $secs <= 0 );
+    $secs += ( 24 * 3600 ) if ( $secs <= 1 );
 
     return $secs;
 }
