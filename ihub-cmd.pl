@@ -154,6 +154,7 @@ InsteonHub::Hub::init(
     password       => $hub_conf{password},
     clear_buffer   => 0,
     clear_on_start => 0,
+    passive        => $hub_conf{passive},
     ignore_dups    => 0,
     poll_interval  => $hub_conf{poll_interval},
     fast_interval  => $hub_conf{fast_interval},

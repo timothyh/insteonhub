@@ -22,6 +22,7 @@ InsteonHub::Hub::init(
     port           => $hub_conf{port},
     user           => $hub_conf{user},
     password       => $hub_conf{password},
+    passive        => $hub_conf{passive},
     clear_buffer   => 0,
     clear_on_start => 0,
     poll_interval  => $hub_conf{poll_interval},
