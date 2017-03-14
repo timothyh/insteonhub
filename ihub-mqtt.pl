@@ -6,6 +6,7 @@ use FindBin;
 use lib "$FindBin::Bin/../lib/perl5";
 
 use Data::Dumper;
+$Data::Dumper::Sortkeys = 1;
 use Digest::MD5 qw(md5 md5_hex md5_base64);
 
 use JSON::PP;
@@ -30,11 +31,8 @@ my $mqtt;
 my $trace = 0;
 
 my $mqtt_updated = 0;
-my $config_mtime = 0;
 
 my $passthru = 0;
-
-my @config_files;
 
 sub raw_cb {
     return unless ( $passthru > 0 );

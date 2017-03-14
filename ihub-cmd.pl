@@ -6,6 +6,7 @@ use FindBin;
 use lib "$FindBin::Bin/../lib/perl5";
 
 use Data::Dumper;
+$Data::Dumper::Sortkeys = 1;
 use Time::HiRes qw(usleep sleep);
 
 use AnyEvent;

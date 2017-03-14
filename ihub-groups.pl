@@ -6,13 +6,8 @@ use FindBin;
 use lib "$FindBin::Bin/../lib/perl5";
 
 use Data::Dumper;
+$Data::Dumper::Sortkeys = 1;
 use Digest::MD5 qw(md5 md5_hex md5_base64);
-
-#use YAML;
-#use JSON::PP;
-
-#use Time::HiRes;    # Just a reminder that AnyEvent needs this
-#use POSIX qw(strftime);
 
 use AnyEvent;
 use AnyEvent::Strict;
