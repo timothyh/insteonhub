@@ -1,7 +1,6 @@
-use strict;
-
 package InsteonHub::Utils;
 
+use strict;
 use base qw(Exporter);
 
 our @ISA    = qw(Exporter);    # Use our.
@@ -14,6 +13,7 @@ our @EXPORT = qw(
   is_x10_house
   is_level
   midnight
+  parse_date
   secs_to_midnight
   secs_from_now
 );
@@ -149,25 +149,28 @@ sub secs_to_midnight {
     return ( 24 * 3600 ) - $secs + 1;
 }
 
-sub secs_from_now {
+sub parse_date {
     my ($str) = @_;
 
     my $secsstr = `date --date '$str' '+%s' 2> /dev/null`;
     chomp $secsstr;
 
-    my $secs = -1;
+    return length($secsstr) ? $secsstr : -1;
+}
 
-    if ( length $secsstr ) {
+sub secs_from_now {
+    my $secsstr = parse_date(@_);
 
-        # my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) =
-        my @tgt     = localtime($secsstr);
-        my @now     = localtime(time);
-        my $nowsecs = $now[0] + ( $now[1] * 60 ) + ( $now[2] * 3600 );
-        my $tgtsecs = $tgt[0] + ( $tgt[1] * 60 ) + ( $tgt[2] * 3600 );
+    return -1 unless ( $secsstr > 0 );
 
-        $secs = $tgtsecs - $nowsecs;
-        $secs += ( 24 * 3600 ) if ( $secs <= 0 );
-    }
+    # my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) =
+    my @tgt     = localtime($secsstr);
+    my @now     = localtime(time);
+    my $nowsecs = $now[0] + ( $now[1] * 60 ) + ( $now[2] * 3600 );
+    my $tgtsecs = $tgt[0] + ( $tgt[1] * 60 ) + ( $tgt[2] * 3600 );
+
+    my $secs = $tgtsecs - $nowsecs;
+    $secs += ( 24 * 3600 ) if ( $secs <= 0 );
 
     return $secs;
 }
