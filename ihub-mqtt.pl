@@ -94,12 +94,16 @@ sub obj_cb {
         my $state;
         my $linkid;
         if ( defined $obj->{cmd_1} ) {
-            if ( $obj->{cmd_1} =~ m{^19 } ) {
-                $level = ( hex( substr( $obj->{cmd_2}, 0, 2 ) ) * 1.0 ) / 255.0;
-                $state = ( $level > 0 ) ? 'on' : 'off';
+            if ( $obj->{cmd_1} =~ m{^00 } ) {
+                $level = 100 * hex( substr( $obj->{cmd_2}, 0, 2 ) ) / 255;
+                $state = ( $level > 1 ) ? 'on' : 'off';
+            }
+            elsif ( $obj->{cmd_1} =~ m{^19 } ) {
+                $level = 100 * hex( substr( $obj->{cmd_2}, 0, 2 ) ) / 255;
+                $state = ( $level > 1 ) ? 'on' : 'off';
             }
             elsif ( $obj->{cmd_1} =~ m{^11 } ) {
-                $level = ( hex( substr( $obj->{cmd_2}, 0, 2 ) ) * 1.0 ) / 255.0;
+                $level = 100 * hex( substr( $obj->{cmd_2}, 0, 2 ) ) / 255;
                 $state = 'on';
             }
             elsif ( $obj->{cmd_1} =~ m{^13 } ) {
@@ -418,6 +422,7 @@ InsteonHub::Hub::init(
     password       => $hub_conf{password},
     clear_buffer   => $hub_conf{clear_buffer},
     clear_on_start => $hub_conf{clear_on_start},
+    passive        => $hub_conf{passive},
     ignore_dups    => $hub_conf{ignore_dups},
     poll_interval  => $hub_conf{poll_interval},
     fast_interval  => $hub_conf{fast_interval},
@@ -473,6 +478,18 @@ $mqtt->subscribe(
           "subscribed to MQTT topic $mqtt_conf{name_prefix}/+/set";
     }
   );
+
+if ( is_true($mqtt_conf{passthru}) || is_false($mqtt_conf{passthru}) ) {
+	$mqtt->subscribe(
+	    topic    => "$mqtt_conf{passthru_topic}/set",
+	    callback => \&receive_mqtt_set,
+	  )->cb(
+	    sub {
+		AE::log note =>
+		  "subscribed to MQTT topic $mqtt_conf{passthru_topic}/set";
+	    }
+	  );
+}
 
 if ( $mqtt_conf{passthru_send} ) {
     $mqtt->subscribe(
