@@ -1,7 +1,6 @@
-use strict;
-
 package InsteonHub::Config;
 
+use strict;
 use base qw(Exporter);
 
 our @ISA    = qw(Exporter);    # Use our.
@@ -35,6 +34,7 @@ my $config = "/etc/insteonhub.yaml:$FindBin::Bin/../etc/insteonhub.yaml";
 
 use File::stat;
 use Data::Dumper;
+$Data::Dumper::Sortkeys = 1;
 use Getopt::Long qw(GetOptionsFromArray);
 use Digest::MD5 qw(md5 md5_hex md5_base64);
 
