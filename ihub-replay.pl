@@ -76,6 +76,10 @@ $trace = $trace ? 1 : 0;
     sub AnyEvent::Log::format_time($) { $timestamp }
 }
 
+if ( $input ) {
+	open STDIN, "<$input" or die "$input: $!\n";
+}
+
 InsteonHub::Hub::init(
     host           => '',
     port           => $hub_conf{port},
