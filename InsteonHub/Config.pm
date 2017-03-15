@@ -35,6 +35,7 @@ my $config = "/etc/insteonhub.yaml:$FindBin::Bin/../etc/insteonhub.yaml";
 use File::stat;
 use Data::Dumper;
 $Data::Dumper::Sortkeys = 1;
+
 use Getopt::Long qw(GetOptionsFromArray);
 use Digest::MD5 qw(md5 md5_hex md5_base64);
 
@@ -492,12 +493,16 @@ sub logConfig {
 
 sub printConfig {
 
+    local $Data::Dumper::Quotekeys = 0;
+    local $Data::Dumper::Pair = ': ';
+    local $Data::Dumper::Terse = 1;
+    local $Data::Dumper::Indent = 1;
+
     print "Hub Config => " . Dumper \%hub_conf;
     print "MQTT Config => " . Dumper \%mqtt_conf;
     print "Devices => " . Dumper \%devices;
     print "Device Names => " . Dumper \%names;
     print "Groups => " . Dumper \%groups;
-
 }
 
 1;
