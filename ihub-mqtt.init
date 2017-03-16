@@ -18,11 +18,10 @@
 RETVAL=0
 SBINDIR=/usr/local/sbin
 PROG=ihub-mqtt
-CONFIG=/etc/insteonhub.yaml
+CONFIG=/etc/insteonhub.yaml:/etc/${PROG}.yaml
 APPUSER=ihub
 
 start() {
-	[ -s $CONFIG ] || exit 1
 	echo -n "Starting $PROG "
 	pgrep -u $APPUSER -f $PROG
 	RETVAL=$?
