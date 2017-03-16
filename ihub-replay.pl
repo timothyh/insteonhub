@@ -6,7 +6,11 @@ use FindBin;
 use lib "$FindBin::Bin/../lib/perl5";
 
 use Data::Dumper;
-$Data::Dumper::Sortkeys = 1;
+$Data::Dumper::Sortkeys  = 1;
+$Data::Dumper::Quotekeys = 0;
+$Data::Dumper::Pair      = ': ';
+$Data::Dumper::Terse     = 1;
+$Data::Dumper::Indent    = 1;
 
 use Time::HiRes;    # Just a reminder that AnyEvent needs this
 use POSIX qw(strftime);
@@ -38,6 +42,12 @@ sub obj_cb {
             if ( defined $linked_groups[$linkid]{name} ) {
                 $obj->{group_name} = $linked_groups[$linkid]{name};
             }
+        }
+        if (   defined( $obj->{linked_device} )
+            && defined( $devices{ $obj->{linked_device} }{name} ) )
+        {
+            $obj->{device_name} = $devices{ $obj->{linked_device} }{name};
+            $obj->{device_type} = $devices{ $obj->{linked_device} }{type};
         }
         if (   defined( $obj->{from_address} )
             && defined( $devices{ $obj->{from_address} }{name} ) )
@@ -76,8 +86,8 @@ $trace = $trace ? 1 : 0;
     sub AnyEvent::Log::format_time($) { $timestamp }
 }
 
-if ( $input ) {
-	open STDIN, "<$input" or die "$input: $!\n";
+if ($input) {
+    open STDIN, "<$input" or die "$input: $!\n";
 }
 
 InsteonHub::Hub::init(

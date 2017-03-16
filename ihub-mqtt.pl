@@ -53,21 +53,26 @@ sub obj_cb {
     if ( $obj->{plm_command} =~ m{^0257 } ) {
         my $linkid = hex( $obj->{all_link_group} );
 
-        AE::log debug => "Group: $linkid Device: $obj->{linked_device}";
+        AE::log debug =>
+          "Group: $linkid Device: $obj->{linked_device} Role: $obj->{bit_6}";
 
-        unless ( exists $linked_groups[$linkid] ) {
-            my $name = sprintf( "linked_%03d", $linkid );
-            $linked_groups[$linkid]{name} = $name;
-            $groups{$name}{name}          = $name;
-            $groups{$name}{linked_id}     = $linkid;
+        # Only care about responder devices where 'PLM is controller'
+        if ( $obj->{bit_6} =~ m{controller}i ) {
+            unless ( exists $linked_groups[$linkid] ) {
+                my $name = sprintf( "linked_%03d", $linkid );
+                $linked_groups[$linkid]{name} = $name;
+                $groups{$name}{name}          = $name;
+                $groups{$name}{linked_id}     = $linkid;
+            }
+            my $ptr = \%{ $linked_groups[$linkid] };
+            $ptr->{devices}{ $obj->{linked_device} } = 1;
+            $ptr->{md5} =
+              md5_base64( join( '', sort( keys %{ $ptr->{devices} } ) ) );
+
+            AE::log trace => "Group $linkid " . Dumper $ptr if ($trace);
         }
-        my $ptr = \%{ $linked_groups[$linkid] };
-        $ptr->{devices}{ $obj->{linked_device} } = 1;
-        $ptr->{md5} =
-          md5_base64( join( '', sort( keys %{ $ptr->{devices} } ) ) );
 
-        AE::log trace => "Group $linkid " . Dumper $ptr if ($trace);
-
+        # Did we originate query - If so continue it
         if ( $hub_conf{query_groups} ) {
 
             # Don't continue to query the link db unless we initiated
@@ -477,16 +482,16 @@ $mqtt->subscribe(
     }
   );
 
-if ( is_true($mqtt_conf{passthru}) || is_false($mqtt_conf{passthru}) ) {
-	$mqtt->subscribe(
-	    topic    => "$mqtt_conf{passthru_topic}/set",
-	    callback => \&receive_mqtt_set,
-	  )->cb(
-	    sub {
-		AE::log note =>
-		  "subscribed to MQTT topic $mqtt_conf{passthru_topic}/set";
-	    }
-	  );
+if ( is_true( $mqtt_conf{passthru} ) || is_false( $mqtt_conf{passthru} ) ) {
+    $mqtt->subscribe(
+        topic    => "$mqtt_conf{passthru_topic}/set",
+        callback => \&receive_mqtt_set,
+      )->cb(
+        sub {
+            AE::log note =>
+              "subscribed to MQTT topic $mqtt_conf{passthru_topic}/set";
+        }
+      );
 }
 
 if ( $mqtt_conf{passthru_send} ) {

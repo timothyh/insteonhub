@@ -41,7 +41,13 @@ sub obj_cb {
         }
         my $ptr = \%{ $linked_groups[$linkid] };
 
-        $ptr->{devices}{ $obj->{linked_device} } = 1;
+        $ptr->{devices}{ $obj->{linked_device} } = 0;
+        $ptr->{devices}{ $obj->{linked_device} } |= 1
+          if ( $obj->{bit_6} =~ m{controller}i );
+        $ptr->{devices}{ $obj->{linked_device} } |= 2
+          if ( $obj->{bit_6} =~ m{responder}i );
+
+        #$ptr->{devices}{ $obj->{linked_device} } = 1;
         $ptr->{md5} =
           md5_base64( join( '', sort( keys %{ $ptr->{devices} } ) ) );
 
@@ -66,8 +72,12 @@ sub display_results {
         my @tmp;
 
         for my $id ( sort( keys %{ $linked_groups[$i]{devices} } ) ) {
+            my $type = '';
+            $type .= 'C' if ( $linked_groups[$i]{devices}{$id} & 2 );
+            $type .= 'R' if ( $linked_groups[$i]{devices}{$id} & 1 );
             push @tmp,
-              ( exists $devices{$id}{name} ) ? $devices{$id}{name} : $id;
+              ( ( exists $devices{$id}{name} ) ? $devices{$id}{name} : $id )
+              . "($type)";
         }
 
         printf "%-12s(%03d) => %s\n", $linked_groups[$i]{name}, $i,
@@ -78,7 +88,8 @@ sub display_results {
 readConfig( 1, 0, 1, 1 );
 
 if ( $hub_conf{passive} ) {
-	die "This command will not work while hub configured in passive mode. Use --no-hub-passive to override.\n";
+    die
+"This command will not work while hub configured in passive mode. Use --no-hub-passive to override.\n";
 }
 
 AnyEvent::Log::logger trace => \$trace;

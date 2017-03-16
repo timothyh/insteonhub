@@ -15,6 +15,7 @@ our @EXPORT = qw(
   %devices
   %groups
   %names
+  %types
   @linked_groups
   $loglevel
   $input
@@ -93,10 +94,11 @@ my %default_device = (
     x10       => 0,
 );
 
+# Bit mask - 1 => Responder, 2 => Controller
 my %types = (
-    remote => 1,
-    sensor => 1,
-    switch => 1,
+    remote => 2,
+    sensor => 2,
+    switch => 3,
     light  => 1,
     outlet => 1,
 );
@@ -197,7 +199,7 @@ sub readConfig {
         $devices{default}{$key} = $value;
     }
 
-    my ($conf_loglevel, $conf_logfile, $conf_restart_at);
+    my ( $conf_loglevel, $conf_logfile, $conf_restart_at );
 
     foreach my $file (@files) {
         my $conf = eval { YAML::LoadFile($file) };
@@ -227,7 +229,7 @@ sub readConfig {
             }
         }
 
-        if ( $parse_devices && defined($conf->{devices}) ) {
+        if ( $parse_devices && defined( $conf->{devices} ) ) {
             foreach my $i ( 0 .. scalar( @{ $conf->{devices} } ) - 1 ) {
                 my $id = $conf->{devices}[$i]{id};
                 unless ( defined $id ) {
@@ -263,9 +265,15 @@ sub readConfig {
 "Duplicate entry for device id: $conf->{devices}[$i]{id} - ignored";
                     $errcnt++;
                 }
-                my $type = $conf->{devices}[$i]{type};
+                my $type       = $conf->{devices}[$i]{type};
+                my $responder  = 0;
+                my $controller = 0;
                 if ( defined $type ) {
-                    unless ( exists $types{$type} ) {
+                    if ( exists $types{$type} ) {
+                        $controller = $types{$type} & 2;
+                        $responder  = $types{$type} & 1;
+                    }
+                    else {
                         AE::log error => "device $id: unknown type: $type";
                         $errcnt++;
                     }
@@ -288,10 +296,12 @@ sub readConfig {
                     $devices{$id}{$key} =
                       $boolopts{$key} ? is_true($value) : $value;
                 }
-                $devices{$id}{device}    = $id;
-                $devices{$id}{timestamp} = 0;
-                $devices{$id}{state}     = 'unknown';
-                $devices{$id}{x10}       = is_x10($id);
+                $devices{$id}{device}     = $id;
+                $devices{$id}{timestamp}  = 0;
+                $devices{$id}{state}      = 'unknown';
+                $devices{$id}{x10}        = is_x10($id);
+                $devices{$id}{controller} = 1 if ($controller);
+                $devices{$id}{responder}  = 1 if ($responder);
 
                 my $name = $conf->{devices}[$i]{name};
                 if ( defined $name ) {
@@ -307,7 +317,7 @@ sub readConfig {
             }
         }
 
-        if ( $parse_groups && defined($conf->{groups}) ) {
+        if ( $parse_groups && defined( $conf->{groups} ) ) {
             foreach my $i ( 0 .. scalar( @{ $conf->{groups} } ) - 1 ) {
                 my $ptr = \%{ $conf->{groups}[$i] };
 
@@ -367,7 +377,7 @@ sub readConfig {
                             next;
                         }
 
-                        if ( $devices{$idtmp}{type} =~ m{^(remote|sensor)$} ) {
+                        unless ( $devices{$idtmp}{responder} ) {
                             AE::log error =>
                               "Group $name: sensor or remote ignored: $id";
                             next;
@@ -401,15 +411,15 @@ sub readConfig {
         $mqtt_conf{$key} = $value if ( $parse_mqtt && $section eq 'mqtt' );
     }
 
-	$loglevel ||= $conf_loglevel;
-	$logfile ||= $conf_logfile;
-	$restart_at ||= $conf_restart_at;
+    $loglevel   ||= $conf_loglevel;
+    $logfile    ||= $conf_logfile;
+    $restart_at ||= $conf_restart_at;
 
-        if ( defined $loglevel ) {
-            $AnyEvent::Log::FILTER->level($loglevel);
-            AnyEvent::Log::logger trace => \$trace;
-            $trace = $trace ? 1 : 0;
-        }
+    if ( defined $loglevel ) {
+        $AnyEvent::Log::FILTER->level($loglevel);
+        AnyEvent::Log::logger trace => \$trace;
+        $trace = $trace ? 1 : 0;
+    }
 
     #AE::log trace => Dumper \%groups if ($trace);
     my %extended;
@@ -494,9 +504,9 @@ sub logConfig {
 sub printConfig {
 
     local $Data::Dumper::Quotekeys = 0;
-    local $Data::Dumper::Pair = ': ';
-    local $Data::Dumper::Terse = 1;
-    local $Data::Dumper::Indent = 1;
+    local $Data::Dumper::Pair      = ': ';
+    local $Data::Dumper::Terse     = 1;
+    local $Data::Dumper::Indent    = 1;
 
     print "Hub Config => " . Dumper \%hub_conf;
     print "MQTT Config => " . Dumper \%mqtt_conf;
