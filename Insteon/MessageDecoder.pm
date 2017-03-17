@@ -1827,7 +1827,7 @@ sub plm_decode {
                     $plmcmdlen{ uc($plm_cmd_id) }->[0] * 2 )
                 {
                     $plm_message .=
-                      "        Message length too short for PLM command.  Not parsed\n";
+"        Message length too short for PLM command.  Not parsed\n";
                     $abort++;
                 }
                 elsif (
@@ -1836,7 +1836,7 @@ sub plm_decode {
                     $plmcmdlen{ uc($plm_cmd_id) }->[1] * 2 )
                 {
                     $plm_message .=
-                      "        Message length too short for PLM command.  Not parsed\n";
+"        Message length too short for PLM command.  Not parsed\n";
                     $abort++;
                 }
                 elsif ( substr( $plm_string, 2, 1 ) == '5' ) {
@@ -1970,7 +1970,7 @@ sub plm_decode {
                   . substr( $plm_string, 10, 2 ) . ":"
                   . substr( $plm_string, 12, 2 ) . "\n";
 
-                #XXXX				$plm_message .= sprintf("%20s: ",'Link Data').substr($plm_string,14,6)."\n";
+#XXXX				$plm_message .= sprintf("%20s: ",'Link Data').substr($plm_string,14,6)."\n";
                 $plm_message .= sprintf( "%20s: ", 'All-Link Command1' )
                   . substr( $plm_string, 14, 2 ) . "\n";
                 $plm_message .= sprintf( "%20s: ", 'All-Link Command2' )
@@ -2022,7 +2022,7 @@ sub plm_decode {
                   . substr( $plm_string, 8, 2 ) . "\n";
                 $plm_ack_pos = 10;
 
-                #TODO:  look up insteon information for all-link command1 / command2 decode
+     #TODO:  look up insteon information for all-link command1 / command2 decode
             }
             elsif ( $plm_cmd_id eq '0262' ) {
                 $plm_message .=
@@ -2148,7 +2148,7 @@ sub plm_decode {
                   . substr( $plm_string, 12, 2 ) . ":"
                   . substr( $plm_string, 14, 2 ) . "\n";
 
-                #				$plm_message .= sprintf("%20s: ",'Link Data').substr($plm_string,16,6)."\n";
+#				$plm_message .= sprintf("%20s: ",'Link Data').substr($plm_string,16,6)."\n";
                 $plm_message .= sprintf( "%20s: ", 'All-Link Command1' )
                   . substr( $plm_string, 16, 2 ) . "\n";
                 $plm_message .= sprintf( "%20s: ", 'All-Link Command2' )
