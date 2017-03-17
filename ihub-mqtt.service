@@ -4,10 +4,13 @@ Requires=network.service
 
 [Service]
 Environment=AE_LOG=filter=info
-ExecStart=%SBINDIR%/ihub-mqtt
+Environment=HUB_CONFIG=/etc/insteonhub.yaml
+ExecStart=/usr/local/sbin/ihub-mqtt
 ExecReload=/bin/kill $MAINPID
 Type=simple
-Restart=always
+Restart=on-success
+SuccessExitStatus=10 SIGUSR1
+RestartSec=1
 
 [Install]
 WantedBy=multi-user.target
