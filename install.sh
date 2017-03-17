@@ -11,7 +11,6 @@ VARDIR=/var
 BINDIR=$TOPDIR/bin
 SBINDIR=$TOPDIR/sbin
 LIBDIR=$TOPDIR/lib/perl5
-CAPTDIR=$VARDIR/lib/insteonhub/capture
 LOGDIR=$VARDIR/log/insteonhub
 CONFIG=$ETCDIR/insteonhub.yaml
 
@@ -23,7 +22,7 @@ TOBIN="ihub-check ihub-capture ihub-cmd ihub-groups ihub-replay"
 TOSBIN="ihub-mqtt"
 
 echo Creating Directories
-for D in $BINDIR $SBINDIR $ETCDIR $LIBDIR $CAPTDIR $LOGDIR ; do
+for D in $BINDIR $SBINDIR $ETCDIR $LIBDIR $LOGDIR ; do
 	[ -d $D ] && continue
 	echo mkdir $D
 	mkdir -p $D
