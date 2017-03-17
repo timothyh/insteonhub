@@ -300,9 +300,10 @@ sub readConfig {
                 $devices{$id}{timestamp}  = 0;
                 $devices{$id}{state}      = 'unknown';
                 $devices{$id}{x10}        = is_x10($id);
-                $devices{$id}{controller} = 1 if ($controller);
-                $devices{$id}{responder}  = 1 if ($responder);
+                $devices{$id}{controller} = $controller ? 1 : 0;
+                $devices{$id}{responder}  = $responder ? 1 : 0;
 
+                delete $devices{$id}{name};
                 my $name = $conf->{devices}[$i]{name};
                 if ( defined $name ) {
                     $name = lc $name;
@@ -311,9 +312,10 @@ sub readConfig {
 "Duplicated name for $conf->{devices}[$i]{id}: $conf->{devices}[$i]{name} - ignored";
                     }
                     else {
-                        $names{$name} = $id;
+                        $devices{$id}{name} = $name;
+                        $names{$name} = $id unless ( $devices{$id}{ignore} );
                     }
-                }
+		}
             }
         }
 
@@ -516,4 +518,3 @@ sub printConfig {
 }
 
 1;
-
