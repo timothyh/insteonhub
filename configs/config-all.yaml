@@ -1,0 +1,216 @@
+# List all possible configuration settings
+# 
+################################################################################
+#
+# Miscellaneous settings
+# Aligns to levels documented for AnyEvent::Log
+# trace,debug,info,note,error,warn,alert,crit,fatal
+#
+log_level: info
+#
+# Log file - Can include date/time formatting strings
+# compatible with strftime
+log_file: logs/ihub-mqtt-%Y%m%d%H%M%S.log
+# 
+# Time for automated restart
+# Takes a string compatible wih date --date
+# Only hours, mins and secs are actually used
+#
+restart_at: 03:01:00
+#
+################################################################################
+#
+# MQTT Broker settings
+#
+mqtt:
+  #
+  # Topic prefix when raw insteon id's are used
+  #
+  device_prefix: home/insteon
+  #
+  # Message format - simple is a single value, json is a JSON formatted message
+  #
+  format: simple,json
+  #
+  # MQTT Broker - defaults to locahost
+  # host: localhost
+  # 
+  # Idle check - send a "ping" message if no activity in this time
+  #
+  idle: 600
+  #
+  # Topic prefix when names are used - includes named groups
+  #
+  name_prefix:  home
+  #
+  # Passthru values never, no, yes, always
+  # never => never allow passthru
+  # no => allow passthrou but start with it off
+  # yes => allow passthrou and start with it on
+  # always => always enable passhru
+  # 
+  passthru: 1
+  #
+  # Allow Insteon messages to be passed through to hub
+  #
+  passthru_send: 1
+  #
+  # Topic to use for passthru messages
+  #
+  passthru_topic: passthru/insteon
+  #
+  # Password for MQTT broker
+  #
+  password: 1234567
+  #
+  # Port for MQTT broker
+  #
+  # port: 1883
+  #
+  # User name for MQTT broker
+  #
+  user: ihub
+#
+################################################################################
+#
+# Insteon Hub settings
+#
+hub:
+  #
+  # Clear hub buffer when it reaches this size in bytes
+  #
+  clear_buffer: 80
+  #
+  # Clear hub buffer on startup - Yes/No
+  # Recommended
+  #
+  clear_on_start: yes
+  #
+  # Ignore back-to-back duplicate messages
+  # Set to no if you're using dimming commands
+  #
+  ignore_dups: yes
+  #
+  # Don't query hub for linked groups
+  #
+  # query_groups: yes
+  #
+  # Ignore duplicate state changes for this duration
+  # Only applies to outgoing messages
+  #
+  state_change_time: 600
+  #
+  # Insteon Hub - IP address can be obtained using Inteon app
+  #
+  host: insteonhub.internal
+  #
+  # Frequency to poll hub for new messages in secs
+  # Higher number are kinder to Hub but will cause slow responsiveness
+  # to remotes and sensors. If too high, may also cause lose of messages
+  #
+  poll_interval: 1.0
+  #
+  # Frequency in secs to use when here's Hub activity
+  #
+  fast_interval: 0.2
+  #
+  # Hub Password
+  #
+  password: 'unknown'
+  #
+  # Monitor only, don't ever send requests to Hub
+  #
+  # passive: no
+  #
+  # Network port to use
+  #
+  # port: 25105
+  #
+  # Hub username
+  # Username and password taken from label on Hub, or set in Insteon app.
+  #
+  user: 'George01'
+  #
+  # Hub Insteon id - On label or use app to find.
+  #
+  id: FF.FF.FF
+  #
+  # Log all buffers to this file
+  # Highly recommended to leave this on so there's a history of messages for
+  # troublshooting.
+  #
+  capture_log: capture/cap-%Y%m%d%H%M%S.out
+#
+# Default settings for devices
+# Used as defaults for devices listed below
+# and for newly discovered devices
+#
+default:
+    retain: no
+    dim: no
+    ignore: yes # New devices will be ignored
+devices:
+# id - Insteon ID XX.XX.XX
+#    or XX.XX.XX:## for multi-button devices
+#    Note that XX.XX.XX and XX.XX.XX:01 are effectively equivalent
+# name - device name/alias - should be unique
+# Types:-
+# - remote - remote control - no associated device
+# - sensor - motion/light sensor - effectively alias for remote
+# - switch - wall switch with associated device
+# - light - light bulb
+# - outlet - wall outlet - binary on/off
+# dim - device generates/consumes dim up/down commands - default no
+# retain - Set MQTT retain when publishing status message - default no
+# qos - MQTT QOS to use when publishing - default 0
+#
+  - id: 12.34.9B:01
+    type: remote
+    name: lr-remote-1
+    dim: yes
+  - id: 12.34.9B:02
+    type: remote
+    name: lr-remote-2
+    dim: yes
+  - id: 56.78.FB
+    name: lower-door
+    type: switch
+  - id: 56.78.6F
+    name: third-floor-hall
+    type: switch
+  - id: 6A.CD.DD
+    name: living-room-1
+    type: light
+    dim: yes
+  - id: 6A.D3.65
+    name: living-room-2
+    type: light
+    dim: yes
+    name: unallocated-1
+    type: light
+    dim: yes
+groups:
+  - Using a linked group
+  - name: living-room
+    #
+    # Linked id is Scene "Group Number" in Insteon app.
+    #
+    linked_id: 3
+    #
+    # Group members can be referenced by name or device id
+    # Note - This will be ignored if a linked_id is supplied
+    #
+    devices:
+      - living-room-1
+      - living-room-2
+      - 6A.D3.66
+  #
+  # Using locally defined groups
+  # Since no linked_id is provided, the devices in this group
+  # will be managed individually.
+  #
+  - name: test-group
+    devices:
+      - 6A.CD.DD
+      - 6A.D3.65
+      - M16 
