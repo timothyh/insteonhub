@@ -40,3 +40,17 @@ for P in $TOSBIN; do
 	echo copy $P.pl to $SBINDIR/$P
 	cp -p $P.pl $SBINDIR/$P
 done
+
+if [ -d /etc/systemd/system ] ; then
+	echo Configuring systemd
+	cp -p ihub-mqtt.service /etc/systemd/system
+	systemctl daemon-reload
+fi
+
+if [ -d /etc/init.d ] ; then
+	cp -p ihub-mqtt.init /etc/init.d/ihub-mqtt
+	# For Debian/Ubuntu
+	update-rc.d ihub-mqtt defaults
+	# For RHEL/CentOS
+	chkconfig ihub-mqtt on
+fi
